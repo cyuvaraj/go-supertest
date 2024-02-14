@@ -2,24 +2,31 @@ package supertest
 
 import (
 	"bytes"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"github.com/franela/goreq"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"net/url"
 	"reflect"
 	"strings"
+
+	"github.com/franela/goreq"
 )
 
 type Request struct {
-	base    string
-	method  string
-	path    string
-	done    reflect.Value
-	body    interface{}
-	headers []headerTuple
-	query   url.Values
+	base            string
+	method          string
+	path            string
+	done            reflect.Value
+	body            interface{}
+	headers         []headerTuple
+	query           url.Values
+	cacertName      string
+	certFileName    string
+	certKeyFileName string
 }
 
 type headerTuple struct {
@@ -30,6 +37,39 @@ type headerTuple struct {
 func NewRequest(base string) *Request {
 	r := &Request{}
 	r.base = base
+	return r
+}
+
+func NewSecureRequest(base, rootCertName, certFile, certKey string) *Request {
+	r := NewRequest(base)
+
+	//TODO:check the file exists
+
+	rootCert, err := ioutil.ReadFile(rootCertName)
+
+	if err != nil {
+		//TODO: log the error
+	}
+
+	rootCertPool := x509.NewCertPool()
+	rootCertPool.AppendCertsFromPEM(rootCert)
+
+	cert, err := tls.LoadX509KeyPair(certFile, certKey)
+	if err != nil {
+		//TODO: log the error
+	}
+
+	var secureTransport http.RoundTripper = &http.Transport{
+		Dial: goreq.DefaultDialer.Dial, 
+		Proxy: http.ProxyFromEnvironment,
+		TLSClientConfig: &tls.Config{
+			RootCAs: rootCertPool,
+			Certificates: []tls.Certificate{cert},
+		},
+	}
+
+	goreq.DefaultTransport = secureTransport
+
 	return r
 }
 
@@ -122,6 +162,7 @@ func (r *Request) Expect(code int, args ...interface{}) error {
 	}
 
 	req := goreq.Request{Method: r.method, Uri: r.base + r.path + "?" + r.query.Encode(), Body: body}
+
 	for _, tuple := range r.headers {
 		req.AddHeader(tuple.name, tuple.value)
 	}
