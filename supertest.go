@@ -60,15 +60,18 @@ func NewSecureRequest(base, rootCertName, certFile, certKey string) *Request {
 	}
 
 	var secureTransport http.RoundTripper = &http.Transport{
-		Dial: goreq.DefaultDialer.Dial, 
+		Dial:  goreq.DefaultDialer.Dial,
 		Proxy: http.ProxyFromEnvironment,
 		TLSClientConfig: &tls.Config{
-			RootCAs: rootCertPool,
+			RootCAs:      rootCertPool,
 			Certificates: []tls.Certificate{cert},
 		},
 	}
 
 	goreq.DefaultTransport = secureTransport
+
+	secureClient := &http.Client{Transport: secureTransport}
+	goreq.DefaultClient = secureClient
 
 	return r
 }
