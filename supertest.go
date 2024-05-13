@@ -136,6 +136,36 @@ func (r *Request) Query(name, value string) *Request {
 	return r
 }
 
+func (r *Request) Do() (*string, *int, error) {
+	var err error
+	var body io.Reader
+
+	if r.body != nil {
+		body, err = prepareRequestBody(r.body)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
+	req := goreq.Request{Method: r.method, Uri: r.base + r.path + "?" + r.query.Encode(), Body: body}
+
+	for _, tuple := range r.headers {
+		req.AddHeader(tuple.name, tuple.value)
+	}
+	res, err := req.Do()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	b, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, nil, err
+	}
+	responseBody := string(b)
+
+	return &responseBody, &res.StatusCode, nil
+}
+
 func (r *Request) Expect(code int, args ...interface{}) error {
 
 	var bodyToCompare interface{}
