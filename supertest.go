@@ -136,14 +136,14 @@ func (r *Request) Query(name, value string) *Request {
 	return r
 }
 
-func (r *Request) Do() (*string, *int, error) {
+func (r *Request) Do() (*string, *int,http.header, error) {
 	var err error
 	var body io.Reader
 
 	if r.body != nil {
 		body, err = prepareRequestBody(r.body)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil,nil, err
 		}
 	}
 
@@ -154,16 +154,16 @@ func (r *Request) Do() (*string, *int, error) {
 	}
 	res, err := req.Do()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil,nil, err
 	}
 
 	b, err := io.ReadAll(res.Body)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil,nil, err
 	}
 	responseBody := string(b)
 
-	return &responseBody, &res.StatusCode, nil
+	return &responseBody, &res.StatusCode,res.header, nil
 }
 
 func (r *Request) Expect(code int, args ...interface{}) error {
