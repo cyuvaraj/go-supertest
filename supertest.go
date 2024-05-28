@@ -136,7 +136,7 @@ func (r *Request) Query(name, value string) *Request {
 	return r
 }
 
-func (r *Request) Do() (*string, *int,http.header, error) {
+func (r *Request) Do() (*string, *int,http.Header, error) {
 	var err error
 	var body io.Reader
 
@@ -163,7 +163,7 @@ func (r *Request) Do() (*string, *int,http.header, error) {
 	}
 	responseBody := string(b)
 
-	return &responseBody, &res.StatusCode,res.header, nil
+	return &responseBody, &res.StatusCode,res.Header, nil
 }
 
 func (r *Request) Expect(code int, args ...interface{}) error {
